@@ -1,0 +1,9 @@
+<div class="profile" *ngIf="user; else noProfile">
+  <h2>Perfil del Usuario</h2>
+  <p><strong>Nombre:</strong> {{ user.name }}</p>
+  <p><strong>Email:</strong> {{ user.email }}</p>
+</div>
+
+<ng-template #noProfile>
+  <p>No se encontraron datos del perfil.</p>
+</ng-template>

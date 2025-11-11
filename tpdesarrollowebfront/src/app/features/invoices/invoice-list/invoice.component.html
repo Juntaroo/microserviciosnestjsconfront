@@ -1,0 +1,26 @@
+<div class="card">
+  <h2>Facturas</h2>
+
+  <table *ngIf="invoices.length > 0; else empty">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Cliente</th>
+        <th>Total</th>
+        <th>Fecha</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let inv of invoices">
+        <td>{{ inv.id }}</td>
+        <td>{{ inv.user?.name || 'Desconocido' }}</td>
+        <td>${{ inv.total }}</td>
+        <td>{{ inv.date | date:'short' }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #empty>
+    <p>No hay facturas disponibles.</p>
+  </ng-template>
+</div>

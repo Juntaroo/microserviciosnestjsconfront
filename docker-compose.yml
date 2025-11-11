@@ -1,0 +1,160 @@
+version: "3.9"
+
+services:
+  # 🗄️ Base de datos MongoDB
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: ecommerce_db
+    volumes:
+      - mongodb_data:/data/db
+    command: >
+      bash -c "
+        mongod --replSet rs0 --bind_ip_all &&
+        sleep 5 &&
+        mongosh --eval '
+          rs.initiate({
+            _id: \"rs0\",
+            members: [{ _id: 0, host: \"mongodb:27017\" }]
+          })
+        ' || true
+      "
+    networks:
+      - ecommerce_net
+
+  #  Mongo Express (UI para la base)
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: user
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://user:password@mongodb:27017/ecommerce_db?authSource=admin
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    depends_on:
+      - mongodb
+    command: /bin/sh -c "sleep 10 && tini -- /docker-entrypoint.sh"
+    networks:
+      - ecommerce_net
+
+  # Microservicio de Usuarios
+  users-ms:
+    build:
+      context: ./users-ms
+      dockerfile: Dockerfile
+    container_name: users-ms
+    restart: always
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./users-ms/.env
+    environment:
+      DATABASE_URL: mongodb://user:password@mongodb:27017/ecommerce_db?authSource=admin&replicaSet=rs0
+      HOST: users-ms
+      PORT: 3001
+    depends_on:
+      - mongodb
+    networks:
+      - ecommerce_net
+
+  # Microservicio de Productos
+  products-ms:
+    build:
+      context: ./products-ms
+      dockerfile: Dockerfile
+    container_name: products-ms
+    restart: always
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./products-ms/.env
+    environment:
+      DATABASE_URL: mongodb://user:password@mongodb:27017/ecommerce_db?authSource=admin&replicaSet=rs0
+      HOST: products-ms
+      PORT: 3002
+    depends_on:
+      - mongodb
+    networks:
+      - ecommerce_net
+
+  #  Microservicio de Facturas
+  invoices-ms:
+    build:
+      context: ./invoices-ms
+      dockerfile: Dockerfile
+    container_name: invoices-ms
+    restart: always
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./invoices-ms/.env
+    environment:
+      DATABASE_URL: mongodb://user:password@mongodb:27017/ecommerce_db?authSource=admin&replicaSet=rs0
+      HOST: invoices-ms
+      PORT: 3003
+    depends_on:
+      - mongodb
+    networks:
+      - ecommerce_net
+
+  # API Gateway
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./gateway/.env
+    environment:
+      HOST: gateway
+      PORT: 3000
+      MS_USER_HOST: users-ms
+      MS_USER_PORT: 3001
+      MS_PRODUCTS_HOST: products-ms
+      MS_PRODUCTS_PORT: 3002
+      MS_INVOICE_HOST: invoices-ms
+      MS_INVOICE_PORT: 3003
+      JWT_SECRET: your_jwt_secret
+    depends_on:
+      - users-ms
+      - products-ms
+      - invoices-ms
+    networks:
+      - ecommerce_net
+
+  # Frontend Angular con Nginx
+  ecommerce-frontend:
+    build:
+      context: ./tpdesarrollowebfront
+      dockerfile: Dockerfile.frontend
+    container_name: ecommerce-frontend
+    restart: always
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway
+    networks:
+      - ecommerce_net
+
+# Volumen persistente
+volumes:
+  mongodb_data:
+    name: ecommerce_mongodb_data
+
+#  Red compartida
+networks:
+  ecommerce_net:
+    driver: bridge

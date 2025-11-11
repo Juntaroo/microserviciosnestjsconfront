@@ -1,0 +1,19 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e40af;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 0.5rem;
+
+  &__title {
+    font-weight: 600;
+    font-size: 1.25rem;
+  }
+
+  &__user {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+}

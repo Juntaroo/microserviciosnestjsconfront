@@ -1,0 +1,21 @@
+<div class="cart">
+  <h2>Carrito de Compras</h2>
+
+  <div *ngIf="carts.length > 0; else emptyCart">
+    <div class="cart__list">
+      <div *ngFor="let item of carts" class="cart__item">
+        <p><strong>Producto:</strong> {{ item.product?.name || 'Desconocido' }}</p>
+        <p><strong>Cantidad:</strong> {{ item.quantity }}</p>
+        <p><strong>Total:</strong> ${{ item.totalPrice }}</p>
+      </div>
+    </div>
+
+    <div class="cart__summary">
+      <h3>Total general: ${{ totalPrice }}</h3>
+    </div>
+  </div>
+
+  <ng-template #emptyCart>
+    <p>No hay productos en el carrito 🛒</p>
+  </ng-template>
+</div>

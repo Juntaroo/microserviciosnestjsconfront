@@ -1,0 +1,42 @@
+/**
+ * generator client {
+ * provider = "prisma-client-js"
+ * output   = "../generated/prisma"
+ * }
+ * datasource db {
+ * provider = "postgresql"
+ * url      = env("DATABASE_URL")
+ * }
+ */
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @map("_id") @default(auto()) @db.ObjectId
+  email     String     @unique
+  password  String
+  name      String
+  roles     String[]   @default([])
+  createdAt DateTime   @default(now())
+  deletedAt DateTime?
+  cartItems CartItem[]
+}
+
+model CartItem {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId    String   @db.ObjectId
+  productId String   @db.ObjectId
+  quantity  Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, productId])
+}
